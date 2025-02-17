@@ -9,6 +9,7 @@ import (
 )
 
 type Email struct {
+	Id        string `json:"id"`
 	From      string `json:"from"`
 	To        string `json:"to"`
 	Subject   string `json:"subject"`

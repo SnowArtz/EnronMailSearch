@@ -1,4 +1,3 @@
-// internal/indexer/indexer.go
 package indexer
 
 import (

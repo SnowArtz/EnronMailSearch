@@ -7,6 +7,7 @@
       <div class="flex bg-[#191819] flex-1">
         <!-- Componente EmailList -->
         <EmailList 
+          ref="emailListRef"
           :selectedTab="selectedTab" 
           @emailSelected="handleEmailSelected" 
         />
@@ -34,17 +35,23 @@ export default {
     const selectedTab = ref('inbox');
     const selectedEmail = ref(null);
 
+    const emailListRef = ref(null);
+
     const handleEmailSelected = (email) => {
       selectedEmail.value = email;
     };
 
     const handleCloseEmail = () => {
       selectedEmail.value = null;
+      if (emailListRef.value && emailListRef.value.clearSelectedEmail) {
+        emailListRef.value.clearSelectedEmail();
+      }
     };
 
     return {
       selectedTab,
       selectedEmail,
+      emailListRef,
       handleEmailSelected,
       handleCloseEmail,
     };

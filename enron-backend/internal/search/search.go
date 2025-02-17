@@ -41,6 +41,7 @@ type SearchResponse struct {
 			Value int `json:"value"`
 		} `json:"total"`
 		Hits []struct {
+			Id        string      `json:"_id"`
 			Source    email.Email `json:"_source"`
 			Highlight struct {
 				Body    []string `json:"body"`
@@ -151,6 +152,7 @@ func SearchEmails(query string, filters map[string]string, from int, size int, c
 	var emails []email.Email
 
 	for _, hit := range result.Hits.Hits {
+		hit.Source.Id = hit.Id
 		hit.Source.Highlight = hit.Highlight
 		emails = append(emails, hit.Source)
 	}

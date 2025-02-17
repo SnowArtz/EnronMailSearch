@@ -1,4 +1,3 @@
-// internal/processor/processor.go
 package processor
 
 import (

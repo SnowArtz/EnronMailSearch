@@ -1,7 +1,7 @@
 <template>
     <section class="w-[45%] bg-[#191819] text-gray-300 p-6 rounded-xl flex flex-col">
         <!-- Filtros -->
-        <div class="flex flex-col gap-4 mb-6">
+        <div class="flex flex-col gap-4 mb-4">
             <!-- Barra de búsqueda -->
             <div class="relative">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -11,31 +11,23 @@
                             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                 </span>
-                <input type="text" 
-                    v-model="searchQuery" 
-                    @input="debounceSearch" 
-                    placeholder="Buscar emails..."
+                <input type="text" v-model="searchQuery" @input="debounceSearch" placeholder="Buscar emails..."
                     class="w-full pl-10 pr-10 py-3 rounded-full bg-[#202021] placeholder-gray-500 text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 <!-- X -->
-                <button v-if="hasAnyFilter" 
-                    @click="clearFilters"
+                <button v-if="searchQuery.trim()" @click="clearFilters"
                     class="absolute inset-y-0 right-0 flex items-center pr-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 hover:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 hover:text-gray-300"
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
             </div>
             <!-- Remitente y Destinatario -->
             <div v-if="searchQuery.trim()" class="flex gap-4">
-                <input type="text" 
-                    v-model="fromFilter" 
-                    @input="debounceSearch" 
-                    placeholder="Remitente"
+                <input type="text" v-model="fromFilter" @input="debounceSearch" placeholder="Remitente"
                     class="w-full pl-4 pr-4 py-2 rounded-full bg-[#202021] placeholder-gray-500 text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                <input type="text" 
-                    v-model="toFilter" 
-                    @input="debounceSearch" 
-                    placeholder="Destinatario"
+                <input type="text" v-model="toFilter" @input="debounceSearch" placeholder="Destinatario"
                     class="w-full pl-4 pr-4 py-2 rounded-full bg-[#202021] placeholder-gray-500 text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
         </div>
@@ -44,50 +36,37 @@
             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
         </div>
 
-        <div v-if="!isLoading && hasSearched && totalEmails === 0 && (searchQuery.trim() || fromFilter.trim() || toFilter.trim())" 
+        <div v-if="!isLoading && hasSearched && totalEmails === 0 && (searchQuery.trim() || fromFilter.trim() || toFilter.trim())"
             class="flex justify-center items-center py-8 text-gray-400">
             <span>No se encontraron coincidencias</span>
         </div>
 
-        <div class="space-y-4 flex-1">
-            <div v-for="email in paginatedEmails" :key="email.id"
-                class="flex items-center p-4 bg-[#202021] rounded-lg shadow-md cursor-pointer hover:bg-[#202021] transition-colors h-32"
-                @click="selectEmail(email)">
-                <div
-                    class="flex-shrink-0 w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold mr-4">
-                    {{ email.sender.charAt(0).toUpperCase() }}
-                </div>
-                <!-- Información del email -->
-                <div class="flex-1">
-                    <div class="flex justify-between items-center">
-                        <span class="font-bold truncate" v-html="email.sender_preview"></span>
-                        <span class="text-sm text-gray-400">{{ email.date }}</span>
-                    </div>
-                    <h3 class="text-m font-semibold truncate" v-html="email.subject_preview"></h3>
-                    <p class="text-sm text-gray-400 line-clamp-3" v-html="email.content_preview"></p>
-                </div>
-            </div>
+        <div :class="['space-y-4 flex-1 min-h-[600px]', { 'invisible': isLoading }]">
+            <EmailItem v-for="email in paginatedEmails" :key="email.id" :email="email"
+                :selected="selectedEmailId === email.id" @select="selectEmail" />
         </div>
 
-        <div class="mt-6 flex justify-center items-center space-x-2">
-            <span v-if="currentGroup > 0"
-                @click="changeGroup(currentGroup - 1)"
-                class="px-3 py-1 rounded cursor-pointer bg-[#202021] text-gray-300 hover:bg-gray-600">
-                ←
+        <div class="mt-3 flex justify-center items-center space-x-2">
+            <span v-if="currentGroup > 0" @click="changeGroup(currentGroup - 1)"
+                class="px-1 py-1 rounded cursor-pointer bg-[#202021] text-gray-300 hover:bg-gray-600 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="0.5"
+                    stroke="currentColor" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                </svg>
             </span>
 
-            <span v-for="page in paginationNumbers" 
-                :key="page" 
-                @click="changePage(page)"
+            <span v-for="page in paginationNumbers" :key="page" @click="changePage(page)"
                 :class="(currentPage + 1) === page ? 'bg-blue-500 text-white' : 'bg-[#202021] text-gray-300 hover:bg-gray-600'"
                 class="px-3 py-1 rounded cursor-pointer transition-colors">
                 {{ page }}
             </span>
 
-            <span v-if="hasNextGroup"
-                @click="changeGroup(currentGroup + 1)"
-                class="px-3 py-1 rounded cursor-pointer bg-[#202021] text-gray-300 hover:bg-gray-600">
-                →
+            <span v-if="hasNextGroup" @click="changeGroup(currentGroup + 1)"
+                class="px-1 py-1 rounded cursor-pointer bg-[#202021] text-gray-300 hover:bg-gray-600 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="0.5"
+                    stroke="currentColor" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                </svg>
             </span>
         </div>
     </section>
@@ -96,9 +75,14 @@
 <script>
 import { ref, computed, watch } from 'vue';
 import { searchEmails } from '../../services/emailService';
+import { formatDate } from '../../utils/dateFormatter';
+import EmailItem from './EmailItem.vue';
 
 export default {
     name: 'EmailList',
+    components: {
+        EmailItem
+    },
     props: {
         selectedTab: {
             type: String,
@@ -112,10 +96,12 @@ export default {
         const toFilter = ref('');
         const currentPage = ref(0);
         const emailsPerPage = 5;
+        const pagesPerGroup = 5;
         const totalEmails = ref(0);
         const emails = ref([]);
         const isLoading = ref(false);
         const hasSearched = ref(false);
+        const selectedEmailId = ref(null);
 
         let debounceTimeout;
         const debounceSearch = () => {
@@ -137,18 +123,6 @@ export default {
             return onSearch(0);
         };
 
-        // Función para manejar la búsqueda desde los inputs
-        const handleSearch = () => {
-            if (
-                searchQuery.value.trim() === '' &&
-                fromFilter.value.trim() === '' &&
-                toFilter.value.trim() === ''
-            )
-                return;
-
-            resetSearch();
-        };
-
         const onSearch = async (newPage = 0) => {
             isLoading.value = true;
             try {
@@ -156,20 +130,14 @@ export default {
                     query: searchQuery.value,
                     from: fromFilter.value,
                     to: toFilter.value,
-                    page: Math.floor(newPage / emailsPerPage),
-                    size: emailsPerPage * 5
+                    group: Math.floor(newPage / pagesPerGroup),
+                    size: emailsPerPage * pagesPerGroup
                 });
-                console.log(result);
                 totalEmails.value = result.total || 0;
-                emails.value = result.emails?.map((email, index) => {
-                    const d = new Date(email.date);
-                    const formattedDate = d.toLocaleDateString('en-US', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric'
-                    });
+                emails.value = result.emails?.map((email) => {
+                    const formattedDate = formatDate(email.date);
                     return {
-                        id: index + 1,
+                        id: email.id,
                         sender: email.from,
                         sender_preview: email.highlight?.from ? email.highlight.from[0] : email.from,
                         receiver: email.to,
@@ -204,23 +172,23 @@ export default {
 
         const totalPages = computed(() => Math.ceil(totalEmails.value / emailsPerPage));
         const paginatedEmails = computed(() => {
-            const pageIndex = currentPage.value % 5;
+            const pageIndex = currentPage.value % pagesPerGroup;
             const start = pageIndex * emailsPerPage;
             return emails.value.slice(start, start + emailsPerPage);
         });
 
-        const currentGroup = computed(() => Math.floor(currentPage.value / 5));
-        
+        const currentGroup = computed(() => Math.floor(currentPage.value / pagesPerGroup));
+
         const hasNextGroup = computed(() => {
-            const lastPageInCurrentGroup = (currentGroup.value + 1) * 5;
+            const lastPageInCurrentGroup = (currentGroup.value + 1) * pagesPerGroup;
             return lastPageInCurrentGroup < totalPages.value;
         });
 
         const paginationNumbers = computed(() => {
             const total = totalPages.value;
-            const start = currentGroup.value * 5 + 1;
-            const end = Math.min(start + 4, total);
-            
+            const start = currentGroup.value * pagesPerGroup + 1;
+            const end = Math.min(start + pagesPerGroup - 1, total);
+
             let pages = [];
             for (let i = start; i <= end; i++) {
                 pages.push(i);
@@ -229,22 +197,23 @@ export default {
         });
 
         const changeGroup = async (newGroup) => {
-            await onSearch(newGroup * 5);
-            currentPage.value = newGroup * 5;
+            await onSearch(newGroup * pagesPerGroup);
+            currentPage.value = newGroup * pagesPerGroup;
         };
 
         const changePage = async (page) => {
             const newPage = page - 1;
-            const newGroup = Math.floor(newPage / 5);
-            
+            const newGroup = Math.floor(newPage / pagesPerGroup);
+
             if (newGroup !== currentGroup.value) {
-                await onSearch(newGroup * 5);
+                await onSearch(newGroup * pagesPerGroup);
             }
-            
+
             currentPage.value = newPage;
         };
 
         const selectEmail = (email) => {
+            selectedEmailId.value = email.id;
             emit('emailSelected', {
                 email,
                 searchTerms: {
@@ -255,14 +224,6 @@ export default {
             });
         };
 
-        // Computed para mostrar/ocultar el botón X
-        const hasAnyFilter = computed(() => {
-            return searchQuery.value.trim() !== '' || 
-                   fromFilter.value.trim() !== '' || 
-                   toFilter.value.trim() !== '';
-        });
-
-        // Función para limpiar todos los filtros
         const clearFilters = () => {
             searchQuery.value = '';
             fromFilter.value = '';
@@ -270,6 +231,11 @@ export default {
             hasSearched.value = false;
             emails.value = [];
             totalEmails.value = 0;
+            currentPage.value = 0;
+        };
+
+        const clearSelectedEmail = () => {
+            selectedEmailId.value = null;
         };
 
         return {
@@ -280,7 +246,6 @@ export default {
             paginatedEmails,
             paginationNumbers,
             changePage,
-            onSearch: handleSearch,
             selectEmail,
             isLoading,
             currentGroup,
@@ -289,8 +254,9 @@ export default {
             totalEmails,
             hasSearched,
             debounceSearch,
-            hasAnyFilter,
-            clearFilters
+            clearFilters,
+            clearSelectedEmail,
+            selectedEmailId
         };
     }
 };
@@ -299,8 +265,8 @@ export default {
 <style scoped>
 :deep(mark) {
     background-color: #052f74;
-    color: inherit;
     color: #fff;
-    padding: 0;
+    padding: 2px;
+    border-radius: 5px;
 }
 </style>
